@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chatbot</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+
+      #chat-container {
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin-bottom: 20px;
+        max-height: 300px;
+        overflow-y: scroll;
+        background-color: #f9f9f9;
+        border-radius: 5px;
+      }
+
+      #chat-container p {
+        margin: 5px 0;
+      }
+
+      #user-input {
+        width: calc(100% - 80px);
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        margin-right: 10px;
+        font-size: 16px;
+      }
+
+      #send-button {
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+
+      #send-button:hover {
+        background-color: #0056b3;
+      }
+
+      h1 {
+        text-align: center;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Chatbot</h1>
+    <div id="chat-container"></div>
+    <div>
+      <input
+        type="text"
+        id="user-input"
+        placeholder="Type your message here..."
+      />
+      <button id="send-button" onclick="sendMessage()">Send</button>
+    </div>
+    <script>
+      function sendMessage() {
+        var userInput = document.getElementById("user-input").value;
+        document.getElementById("user-input").value = "";
+
+        var chatContainer = document.getElementById("chat-container");
+        var userMessage = document.createElement("p");
+        userMessage.innerHTML = "<strong>You:</strong> " + userInput;
+        chatContainer.appendChild(userMessage);
+
+        // Send user input to the server
+        fetch("/get_response", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams({ user_input: userInput }),
+          })
+          .then((response) => response.json())
+          .then((data) => {
+            var chatbotMessage = document.createElement("p");
+            chatContainer.appendChild(chatbotMessage);
+            if (
+              data.response.includes(
+                "Please choose one of the following options:"
+              )
+            ) {
+              var optionsHTML = "<strong>Bot:</strong> ";
+              var options = data.response.split("\n");
+              options.forEach(function (option) {
+                if (option.trim() !== "") {
+                  optionsHTML +=
+                    "<button onclick=\"selectOption('" +
+                    option.trim() +
+                    "')\">" +
+                    option.trim() +
+                    "</button>";
+                }
+              });
+              chatbotMessage.innerHTML = optionsHTML;
+            } else {
+              chatbotMessage.innerHTML =
+                "<strong>Bot:</strong> " + data.response;
+            }
+            chatContainer.scrollTop = chatContainer.scrollHeight; // Scroll to bottom
+          })
+          .catch((error) => console.error("Error:", error));
+      }
+
+      function selectOption(option) {
+        document.getElementById("user-input").value = option;
+        sendMessage();
+      }
+    </script>
+  </body>
+</html>
